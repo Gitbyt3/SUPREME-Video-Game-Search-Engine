@@ -1,2 +1,3 @@
 *.ipynb_checkpoints/
 *.ipynb_checkpoints/*
+doc_embeddings_wo_mask.pt
