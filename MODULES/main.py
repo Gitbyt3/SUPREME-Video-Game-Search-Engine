@@ -1,10 +1,9 @@
 import requests
-from pathlib import Path
-import sys
 import pandas as pd
 from io import StringIO
 from ast import literal_eval as string_to_list
-import query_processing
+import query_processing as qp
+import candidate_retrieval as cr
 
 def games_processing(games):
     games['Summary'] = games['Summary'].fillna('')
@@ -23,12 +22,15 @@ def games_processing(games):
 def main():
     games = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1lBpDPlBsoR3UUe1sYLs5z4cLiJr0_tAs").text), index_col=0)
     games_BM25, games_SBERT = games_processing(games)
+    developer_set, platform_set, genre_set, expansion_terms = qp.init(games_SBERT)
 
-    # queries = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1Gz9Y-tiuubLqpuHPf-5MO4bugb9IJXBh").text))
-    # return games, queries
+    SBERT_weights = [0.5, 0.2, 0.3, 0.4]
+    BM25_weights = [2.0, 0.6, 1.5, 0.8, 0.8]
+    bm25_matrices, index, mlb_dev, mlb_plat, mlb_genre = cr.init(games_BM25, games_SBERT, SBERT_weights)
 
-    developer_set, platform_set, genre_set, expansion_terms = query_processing.init(games_SBERT)
     test_query = "  THis Is a test_query playstation 5 PS5 FPS First-person shooter"
+    test_processed = qp.execute(test_query, expansion_terms, developer_set, platform_set, genre_set)
+    candidates = cr.execute(test_processed, games_BM25['Title'], bm25_matrices, BM25_weights, index, mlb_dev, mlb_plat, mlb_genre)
 
     return None
 
