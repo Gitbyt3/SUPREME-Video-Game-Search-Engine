@@ -12,20 +12,20 @@ import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
-import requests
 
-def init(games):
-    response = requests.get("https://drive.google.com/uc?export=download&id=1OgpQ62XC2H-MCHEkg-aJetRKcJOMq7e1")
-    expansion_terms = json.loads(response.text)
+expansion_terms = None
+developers, platforms, genres = set(), set(), set()
+def init(games, expansion_terms_config=None):
+    global expansion_terms, developers, platforms, genres
+    for developers_list, platforms_list, genres_list in zip(games['Developers'], games['Platforms'], games['Genres']):
+        developers.update(set(developers_list)), platforms.update(set(platforms_list)), genres.update(set(genres_list))
+    developers, platforms, genres = set(word.lower() for word in developers), set(word.lower() for word in platforms), set(word.lower() for word in genres)
 
-    developer_set, platform_set, genre_set = set(), set(), set()
-    for developers, platforms, genres in zip(games['Developers'], games['Platforms'], games['Genres']):
-        developer_set.update(set(developers)), platform_set.update(set(platforms)), genre_set.update(set(genres))
-    developer_set, platform_set, genre_set = set(word.lower() for word in developer_set), set(word.lower() for word in platform_set), set(word.lower() for word in genre_set)
+    expansion_terms = expansion_terms_config
 
-    return developer_set, platform_set, genre_set, expansion_terms
+    return developers, platforms, genres
 
-def execute(query, expansion_terms, developers, platforms, genres, synonym_expansion=False):
+def execute(query, synonym_expansion=False):
     def query_normalisation(query):
         query = query.lower()
         query = unicodedata.normalize('NFKD', query)

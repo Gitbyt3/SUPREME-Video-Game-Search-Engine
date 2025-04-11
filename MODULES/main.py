@@ -4,6 +4,8 @@ from io import StringIO
 from ast import literal_eval as string_to_list
 import query_processing as qp
 import candidate_retrieval as cr
+import os
+import json
 
 def games_processing(games):
     games['Summary'] = games['Summary'].fillna('')
@@ -13,6 +15,8 @@ def games_processing(games):
     games[['Developers','Platforms','Genres']] = games[['Developers','Platforms','Genres']].map(lambda listed: [x.lower() for x in listed])
     games['Title'], games['Summary']  = games['Title'].str.lower(), games['Summary'].str.lower()
 
+    print(games[['Developers','Platforms','Genres']].head(5))
+
     games_SBERT = games.copy()
     games_BM25 = games.copy()
     games_BM25[['Developers','Platforms','Genres']] = games_BM25[['Developers','Platforms','Genres']].map(lambda x: ' '.join(x))
@@ -20,18 +24,21 @@ def games_processing(games):
     return games_BM25, games_SBERT
 
 def main():
-    games = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1lBpDPlBsoR3UUe1sYLs5z4cLiJr0_tAs").text), index_col=0)
+    with open(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Query_Processing/expansion_terms.json')), 'r') as json_file:
+        expansion_terms = json.load(json_file)
+
+    games = pd.read_csv(os.path.abspath(os.path.join(os.path.dirname(__file__), '../backloggd_games.csv')), index_col=0)
     games_BM25, games_SBERT = games_processing(games)
-    developer_set, platform_set, genre_set, expansion_terms = qp.init(games_SBERT)
+    developer_set, platform_set, genre_set = qp.init(games_SBERT, expansion_terms)
 
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
     BM25_weights = [2.0, 0.6, 1.5, 0.8, 0.8]
     cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights)
 
     test_query = "  THis Is a test_query playstation 5 PS5 FPS First-person shooter"
-    test_processed = qp.execute(test_query, expansion_terms, developer_set, platform_set, genre_set)
+    test_processed = qp.execute(test_query)
     candidates = cr.execute(test_processed)
-    print(candidates)
+    print(candidates.to_json(orient='records'))
 
     return None
 
