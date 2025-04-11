@@ -1,7 +1,10 @@
 import requests
+from pathlib import Path
+import sys
 import pandas as pd
 from io import StringIO
 from ast import literal_eval as string_to_list
+import query_processing
 
 def games_processing(games):
     games['Summary'] = games['Summary'].fillna('')
@@ -9,8 +12,7 @@ def games_processing(games):
     games[['Developers','Platforms','Genres']] = games[['Developers','Platforms','Genres']].map(string_to_list)
     games = games.drop_duplicates(subset='Title', ignore_index=True)
     games[['Developers','Platforms','Genres']] = games[['Developers','Platforms','Genres']].map(lambda listed: [x.lower() for x in listed])
-    games['Title'] = games['Title'].str.lower()
-    games['Summary'] = games['Summary'].str.lower()
+    games['Title'], games['Summary']  = games['Title'].str.lower(), games['Summary'].str.lower()
 
     games_SBERT = games.copy()
     games_BM25 = games.copy()
@@ -22,10 +24,13 @@ def main():
     games = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1lBpDPlBsoR3UUe1sYLs5z4cLiJr0_tAs").text), index_col=0)
     games_BM25, games_SBERT = games_processing(games)
 
-    queries = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1Gz9Y-tiuubLqpuHPf-5MO4bugb9IJXBh").text))
-    queries[['Developers','Platforms','Genres']] = queries[['Developers','Platforms','Genres']].map(string_to_list)
+    # queries = pd.read_csv(StringIO(requests.get("https://drive.google.com/uc?export=download&id=1Gz9Y-tiuubLqpuHPf-5MO4bugb9IJXBh").text))
+    # return games, queries
 
-    return games, queries
+    developer_set, platform_set, genre_set, expansion_terms = query_processing.init(games_SBERT)
+    test_query = "  THis Is a test_query playstation 5 PS5 FPS First-person shooter"
+
+    return None
 
 if __name__ == "__main__":
     main()
