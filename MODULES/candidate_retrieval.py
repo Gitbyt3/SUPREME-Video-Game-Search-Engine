@@ -83,7 +83,12 @@ def retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_t
 
     return output
 
-def init(games_bm25, games_SBERT, SBERT_weights):
+doc_titles = None
+bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights = None, None, None, None, None, None
+def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
+    global bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights, doc_titles
+    
+    BM25_weights = bm25_weights
     bm25_matrices = [
         BM25_field_matrix(games_bm25, 'Title', k_1=1.2, b=0.4, max_features=5000, min_df=1),
         BM25_field_matrix(games_bm25, 'Developers', k_1=1.1, b=0.3, max_features=4000, min_df=1),
@@ -91,12 +96,11 @@ def init(games_bm25, games_SBERT, SBERT_weights):
         BM25_field_matrix(games_bm25, 'Platforms', k_1=1.0, b=0.2, max_features=500, min_df=2),
         BM25_field_matrix(games_bm25, 'Genres', k_1=1.0, b=0.2, max_features=800, min_df=2)
                     ]
-    index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
+    faiss_index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
+    doc_titles = games_bm25['Title']
 
-    return bm25_matrices, index, mlb_dev, mlb_plat, mlb_genre
-
-def execute(query, doc_titles, bm25_matrices, bm25_weights, faiss_index, mlb_dev, mlb_plat, mlb_genre, top_k=100):
-    topk_bm25 = retrieve_top_k_bm25(query, bm25_matrices, bm25_weights, doc_titles)
+def execute(query, top_k=100):
+    topk_bm25 = retrieve_top_k_bm25(query, bm25_matrices, BM25_weights, doc_titles)
     topk_faiss = retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles)
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score','SBERT Score'])
     topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID','BM25 Score','SBERT Score'])

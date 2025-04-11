@@ -26,11 +26,12 @@ def main():
 
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
     BM25_weights = [2.0, 0.6, 1.5, 0.8, 0.8]
-    bm25_matrices, index, mlb_dev, mlb_plat, mlb_genre = cr.init(games_BM25, games_SBERT, SBERT_weights)
+    cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights)
 
     test_query = "  THis Is a test_query playstation 5 PS5 FPS First-person shooter"
     test_processed = qp.execute(test_query, expansion_terms, developer_set, platform_set, genre_set)
-    candidates = cr.execute(test_processed, games_BM25['Title'], bm25_matrices, BM25_weights, index, mlb_dev, mlb_plat, mlb_genre)
+    candidates = cr.execute(test_processed)
+    print(candidates)
 
     return None
 

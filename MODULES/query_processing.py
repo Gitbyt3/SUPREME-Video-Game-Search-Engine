@@ -31,7 +31,7 @@ def execute(query, expansion_terms, developers, platforms, genres, synonym_expan
         query = unicodedata.normalize('NFKD', query)
         query = ''.join([c for c in query if not unicodedata.combining(c)])
         query = query.replace('-', ' ')
-        query = re.sub(f'[{re.escape(string.punctuation)}]', '', query)
+        query = re.sub(f'[{re.escape(string.punctuation)}]', ' ', query)
         query = re.sub(r'\s+', ' ', query).strip()
         tokens = word_tokenize(query)
         stop_words = set(stopwords.words('english'))
