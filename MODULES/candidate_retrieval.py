@@ -108,9 +108,9 @@ def init_bm25_models(documents):
         BM25Okapi(documents['Platforms'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
         BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
     ]
-def retrieve_top_k_bm25_new(query, top_k=100):
+def retrieve_top_k_bm25_new(processed_query, top_k=100):
     global bm25_models
-    query = tokenize(query['Processed'])
+    query = tokenize(processed_query['Processed'])
     scores = np.zeros((len(bm25_models), len(doc_titles)))
     score_details = []
     for i, model in enumerate(bm25_models):
@@ -126,7 +126,7 @@ def retrieve_top_k_bm25_new(query, top_k=100):
     for k in ranked_topk:
         doc_id, doc_title, score, details = k[0][0], k[0][1], k[1], k[2]
         details_output.append(details)
-        output.append((query, doc_title, doc_id, score))
+        output.append((processed_query['Processed'], doc_title, doc_id, score))
     return output, details_output
 
 doc_titles = None
@@ -143,18 +143,16 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
     #     BM25_field_matrix(games_bm25, 'Genres', k_1=1.0, b=0.2, max_features=800, min_df=2)
     #                 ]
     init_bm25_models(games_bm25)
-    # faiss_index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
+    faiss_index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
     doc_titles = games_bm25['Title']
 
 def execute(query, top_k=100):
     # topk_bm25, topk_bm25_scores = retrieve_top_k_bm25(query, bm25_matrices, BM25_weights, doc_titles)
     topk_bm25, topk_bm25_scores = retrieve_top_k_bm25_new(query, top_k=top_k)
-    # topk_faiss = retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles)
+    topk_faiss = retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles)
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
     topk_bm25_df['BM25_Scores'] = topk_bm25_scores
-    return topk_bm25_df
-    # topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID', 'SBERT Score']).drop(columns=['Title'])
-
+    topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID', 'SBERT Score']).drop(columns=['Title'])
     results = pd.merge(topk_bm25_df, topk_faiss_df, on=['Query', 'ID'], how='outer').fillna(0)
     # results = pd.concat([topk_bm25_df, topk_faiss_df], axis=0).drop_duplicates(subset=['Query','ID']).sort_values(by='Query',ignore_index='True')
 

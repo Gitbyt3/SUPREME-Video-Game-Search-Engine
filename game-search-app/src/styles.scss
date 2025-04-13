@@ -493,6 +493,7 @@ button {
   }
   .debug-info {
     width: 200px;
+    flex-shrink: 0;
     margin-left: 16px;
     font-size: 14px;
     color: var(--text-secondary);

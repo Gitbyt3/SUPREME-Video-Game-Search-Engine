@@ -253,7 +253,7 @@ const ResultsPage: React.FC = () => {
                 <div>DOC ID: {game.id}</div>
                 <div>BM25 Score: {game.bm25Score ?? '-'}</div>
                 <div>BM25 Details: {game.bm25Scores?.map(item => +item.toFixed(3)).join(',')}</div>
-                <div>SBERT Score: {game.sbertScore ?? '-'}</div>
+                <div>SBERT Score: {+(game.sbertScore?.toFixed(7) || 0)}</div>
                 <div>CTR: {game.ctr}</div>
               </div>
             </div>
