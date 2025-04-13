@@ -66,9 +66,12 @@ def main():
             sys.stderr.write('Invalid JSON format.\n')
             sys.stderr.flush()
             continue
+
         query = message['query']
         req_id = message['id']
         processed_query = qp.execute(query)
+        sys.stderr.write('Done query processing:', query, '->', processed_query, '\n')
+        sys.stderr.flush()
         candidates = cr.execute(processed_query)
         scaler = StandardScaler()
         # candidates[['BM25 Score', 'SBERT Score']] = scaler.fit_transform(candidates[['BM25 Score', 'SBERT Score']])
