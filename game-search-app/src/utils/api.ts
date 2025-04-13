@@ -18,6 +18,7 @@ export const query = async (q: string) =>
         item['bm25Score'] = item['BM25 Score'];
         item['bm25Scores'] = item['BM25_Scores'] || [];
         item['sbertScore'] = item['SBERT Score'];
+        item['finalScore'] = item['Final Score'];
 
         const date = new Date(item['release_date']);
         if (isNaN(date.valueOf())) {
@@ -26,10 +27,13 @@ export const query = async (q: string) =>
           item['releaseYear'] = date.getFullYear()
         }
 
+        // add ctr to weight_score
+        item['weighted_score'] += (item['ctr'] || 0) / 100
+
         return item;
       });
 
-      return data;
+      return data.sort((a: any, b: any) => b['Final Score'] - a['Final Score']);
     })
 
 export const recordCtr = async(id: string | number) =>

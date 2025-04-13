@@ -25,7 +25,7 @@ export const handleSearch = (req: Request, res: Response): void => {
 
   retrieveService.irProcess.stdout.on('data', function listener(data) {
     console.log('Got message from IR process:', data.toString());
-    console.log('Excepting ID:', reqId)
+    console.log('Expecting ID:', reqId)
     try {
       data = JSON.parse(data.toString());
       if (data.id === reqId) {

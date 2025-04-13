@@ -130,7 +130,7 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
 
 def execute(query, top_k=100):
     topk_bm25, topk_bm25_scores = retrieve_top_k_bm25_new(query, top_k=top_k)
-    topk_faiss = retrieve_top_k_faiss(query, top_k=top_k)
+    topk_faiss = retrieve_top_k_faiss(query, top_k=top_k * 3)
 
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
     topk_bm25_df['BM25_Scores'] = topk_bm25_scores

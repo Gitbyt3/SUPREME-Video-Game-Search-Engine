@@ -2,6 +2,7 @@
 
 import numpy as np
 import pandas as pd
+from utils import sigmoid_scaling, max_min_scaling
 
 model = None
 
@@ -15,19 +16,27 @@ def init(model_object):
     model = model_object
 
 
-def compute_features(query: dict, df: pd.DataFrame) -> pd.DataFrame:
+def compute_features(query: dict, df: pd.DataFrame, useLTR = True) -> pd.DataFrame:
     df = df.copy()
+
+
+    # Example dataframe with a release_date column
+    # Convert the release_date column to datetime objects
+    temp_df = pd.to_datetime(df['Release_Date'], errors='coerce')
+
+    # Extract the year from the release_date column
+    df['Release_Year'] = temp_df.dt.year.fillna(0)
 
     intent = query.get("Intent", {})
     rating_boost = "rating_boost" in intent
     recency_boost = "recency_boost" in intent
     popularity_boost = "player_boost" in intent
 
-    df["popularity_signal"] = df["Plays"] + df["Playing"]
-    df["recency_signal"] = df["Release_Year"]
+    df["popularity_signal"] = (df["Plays"].fillna(0) + df["Playing"].fillna(0)) if useLTR else max_min_scaling(df["Plays"].fillna(0) + df["Playing"].fillna(0))
+    df["recency_signal"] = (df["Release_Year"]) if useLTR else max_min_scaling(df["Release_Year"].apply(lambda x: max(0, x - 2000)))
 
     # NEW: dummy rating signal if not already present
-    df["rating_signal"] = df["Rating"].fillna(0)
+    df["rating_signal"] = (df["Rating"].fillna(0)) if useLTR else max_min_scaling(df["Rating"].fillna(0))
     if rating_boost:
         df["rating_signal"] *= 1.5
 
@@ -45,7 +54,7 @@ def compute_features(query: dict, df: pd.DataFrame) -> pd.DataFrame:
 
     return df
 
-def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame) -> pd.DataFrame:
+def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useLTR = True) -> pd.DataFrame:
     """
     Apply LambdaMART model to re-rank candidates based on query intent and features.
     Args:
@@ -59,7 +68,7 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame) -> p
         raise RuntimeError("You must call query_ranking.init() with a trained model first.")
 
     # Build feature set
-    df = compute_features(processed_query, candidates)
+    df = compute_features(processed_query, candidates, useLTR)
 
     # Extract required features for LTR model
     feature_cols = [
@@ -69,8 +78,15 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame) -> p
 
     X = df[feature_cols].fillna(0)
 
-    # Score using LambdaMART
-    df["Final Score"] = model.predict(X)
+    if not useLTR:
+        df["Final Score"] = (
+            df["BM25 Score"] * 0.7 + df["SBERT Score"] * 0.3
+            + df["rating_signal"] * 0.2 + df["popularity_signal"] * 0.2
+            + df["recency_signal"] * 0.2
+        )
+    else:
+        # Score using LambdaMART
+        df["Final Score"] = model.predict(X)
 
     # Sort and return
     return df.sort_values(by="Final Score", ascending=False).reset_index(drop=True)

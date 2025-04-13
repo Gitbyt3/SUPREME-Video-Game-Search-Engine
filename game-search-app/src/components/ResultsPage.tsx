@@ -21,6 +21,8 @@ interface Game {
   bm25Score?: number;
   bm25Scores?: number[];
   sbertScore?: number;
+  weighted_score?: number;
+  finalScore?: number;
   ctr?: number;
 }
 
@@ -254,6 +256,7 @@ const ResultsPage: React.FC = () => {
                 <div>BM25 Score: {game.bm25Score ?? '-'}</div>
                 <div>BM25 Details: {game.bm25Scores?.map(item => +item.toFixed(3)).join(',')}</div>
                 <div>SBERT Score: {+(game.sbertScore?.toFixed(7) || 0)}</div>
+                <div>Final Score: {+(game.finalScore?.toFixed(7) || 0)}</div>
                 <div>CTR: {game.ctr}</div>
               </div>
             </div>

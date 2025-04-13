@@ -30,7 +30,7 @@ const handleSearch = (req, res) => {
     retrieve_1.default.irProcess.stdout.on('data', function listener(data) {
         var _a, _b;
         console.log('Got message from IR process:', data.toString());
-        console.log('Excepting ID:', reqId);
+        console.log('Expecting ID:', reqId);
         try {
             data = JSON.parse(data.toString());
             if (data.id === reqId) {
