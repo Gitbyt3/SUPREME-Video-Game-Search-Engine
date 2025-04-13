@@ -1,0 +1,751 @@
+:root {
+  --primary-color: #05d2e4;
+  --primary-color-lighter: #25dfef;
+  --primary-color-darker: #04a4b2;
+  --secondary-color: #fbb72d;
+  --secondary-color-darker: #f0a305;
+  --text-color: #333;
+  --text-secondary: #666;
+  --background-color: #f5f5f5;
+  --card-background: #ffffff;
+  --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+  --glow-color: rgba(5, 210, 228, 0.4);
+  --glow-color-secondary: rgba(5, 210, 228, 0.2);
+  --pixel-border: 2px solid #000;
+  --pixel-shadow: 4px 4px 0 rgba(0, 0, 0, 0.2);
+  --pixel-shadow-small: 3px 3px 0 rgba(0, 0, 0, 0.2);
+  --pixel-shadow-small-primary: 3px 3px 0 var(--primary-color-darker);
+  --pixel-shadow-small-secondary: 3px 3px 0 var(--secondary-color-darker);
+  --pixel-shadow-hover: 6px 6px 0 rgba(0, 0, 0, 0.2);
+  --light-bg: #e8e8e8;
+  box-sizing: border-box;
+  color: rgb(3.9055793991, 164.0343347639, 178.0944206009);
+}
+
+@font-face {
+  font-family: "blender";
+  src: url("/public/assets/BlenderPro-Book.woff2") format("woff2");
+  font-weight: normal;
+}
+@font-face {
+  font-family: "blender";
+  src: url("/public/assets/BlenderPro-Bold.woff2") format("woff2");
+  font-weight: bold;
+}
+body {
+  margin: 0;
+  padding: 0;
+  font-family: "blender", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  background-color: var(--background-color);
+  color: var(--text-color);
+}
+
+input,
+button {
+  font-family: "blender", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+}
+
+.container {
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 0 20px;
+}
+.container-md {
+  max-width: 800px;
+}
+
+.flex-center {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+}
+
+.card {
+  width: 100%;
+  max-width: 500px;
+  text-align: center;
+  margin-bottom: 60px;
+}
+
+.team-info {
+  font-size: 0.8rem;
+  margin-bottom: 6px;
+  position: relative;
+  display: inline-block;
+}
+.team-info > span {
+  border: 1px solid var(--text-color);
+  padding: 0 2px;
+  cursor: help;
+  font-family: "Pixelify Sans";
+}
+.team-info:hover .team-popup {
+  opacity: 1;
+  visibility: visible;
+  bottom: calc(100% + 10px);
+}
+
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes fade-out {
+  to {
+    opacity: 0;
+  }
+}
+@keyframes slide-from-right {
+  from {
+    transform: translateX(30px);
+  }
+}
+@keyframes slide-to-left {
+  to {
+    transform: translateX(-30px);
+  }
+}
+::view-transition-old(root) {
+  animation: 90ms cubic-bezier(0.4, 0, 1, 1) both fade-out, 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-to-left;
+}
+
+::view-transition-new(root) {
+  animation: 210ms cubic-bezier(0, 0, 0.2, 1) 90ms both fade-in, 300ms cubic-bezier(0.4, 0, 0.2, 1) both slide-from-right;
+}
+
+.team-popup {
+  font-family: "Pixelify Sans";
+  position: absolute;
+  width: 250px;
+  text-align: left;
+  bottom: 100%;
+  left: 50%;
+  transform: translateX(-50%) translateY(30px);
+  padding: 8px 12px;
+  background: var(--card-background);
+  border: 1px solid var(--primary-color);
+  border-radius: 12px;
+  font-size: 0.9rem;
+  white-space: nowrap;
+  opacity: 0;
+  visibility: hidden;
+  transition: all 0.2s ease;
+  box-shadow: var(--shadow);
+  z-index: 1000;
+}
+.team-popup-title {
+  display: flex;
+  font-size: 1.2rem;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+.team-popup-title img {
+  border-radius: 50%;
+}
+.team-popup-content {
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.team-popup-content > div {
+  margin-bottom: 8px;
+}
+.team-popup-content > div > div {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.team-popup-content > div > div img {
+  margin-right: 4px;
+}
+.team-popup-content > div > div i {
+  font-size: 0.7rem;
+}
+.team-popup-content p {
+  font-size: 0.8rem;
+  margin: 6px 4px;
+  font-family: "blender";
+  font-style: italic;
+}
+
+.home-page .title {
+  font-size: 2.5rem;
+  margin: 0;
+  color: var(--text-color);
+  cursor: pointer;
+}
+.home-page .title img {
+  box-shadow: var(--pixel-shadow);
+}
+.home-page .subtitle {
+  font-size: 1.1rem;
+  color: var(--text-secondary);
+  margin: 0 0 24px 0;
+}
+.home-page .form {
+  width: 100%;
+}
+
+.results-page {
+  padding-top: 26px;
+}
+.results-page .title {
+  margin: 40px auto 15px;
+  font-size: 1rem;
+  font-weight: normal;
+  max-width: 1200px;
+  font-family: "Pixelify Sans";
+}
+.results-page .search-bar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 10px;
+  position: relative;
+}
+.results-page .search-bar img {
+  margin-right: 10px;
+  cursor: pointer;
+  box-shadow: var(--pixel-shadow);
+}
+.results-page .search-bar .search-bar-background {
+  position: absolute;
+  top: -45px;
+  left: 10px;
+  background: url("/public/assets/pantheon-poster.jpg") no-repeat center center;
+  mask-image: radial-gradient(closest-side, rgb(0, 0, 0) 60%, rgba(0, 0, 0, 0));
+  z-index: -1;
+  background-size: cover;
+  width: 100px;
+  height: 100px;
+}
+.results-page .search-input-container {
+  display: flex;
+  align-items: center;
+  width: 500px;
+  margin: 0;
+  gap: 10px;
+  position: relative;
+}
+.results-page .search-input-container input {
+  height: 34px;
+  animation: none;
+  border: none;
+  background-color: var(--light-bg);
+  box-shadow: none;
+  border-radius: 8px;
+}
+.results-page .search-input-container input:focus {
+  box-shadow: var(--pixel-shadow-small);
+  transform: translate(-2px, -2px);
+}
+
+.search-input-container {
+  position: relative;
+  margin-bottom: 16px;
+}
+
+.search-input {
+  width: 100%;
+  padding: 12px;
+  border: 1px solid #ddd;
+  background-color: #f8f8f8;
+  border-radius: 8px;
+  font-size: 1rem;
+  box-sizing: border-box;
+  transition: all 0.3s ease;
+  animation: glow 3s infinite;
+  position: relative;
+}
+.search-input:focus {
+  outline: none;
+  box-shadow: 0 0 15px var(--glow-color);
+}
+
+.search-button-container {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 8px;
+}
+.search-button-icon-container {
+  font-size: 10px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  color: var(--primary-color);
+  padding: 0;
+  margin-right: -12px;
+}
+.search-button-icon-container .search-button-icon {
+  border: 1px solid var(--primary-color);
+  height: 18px;
+  width: 18px;
+  line-height: 18px;
+  font-size: 12px;
+  font-weight: bold;
+  position: relative;
+  border-radius: 4px;
+}
+.search-button-icon-container .search-button-icon::before {
+  content: "";
+  position: absolute;
+  top: -2px;
+  left: -2px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--primary-color);
+}
+.search-button-icon-container .search-button-icon::after {
+  content: "";
+  position: absolute;
+  bottom: -2px;
+  right: -2px;
+  width: 4px;
+  height: 4px;
+  background-color: var(--primary-color);
+}
+.search-button-icon-container .search-button-text {
+  transform: scale(0.5);
+  height: 12px;
+  width: 50px;
+}
+
+.button {
+  background-color: var(--secondary-color);
+  border: none;
+  border-radius: 8px;
+  color: #fff;
+  height: 34px;
+  padding: 0 8px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-family: "Pixelify Sans";
+}
+.button:hover {
+  box-shadow: var(--pixel-shadow-small-secondary);
+  transform: translate(-2px, -2px);
+}
+
+.main-button {
+  border: solid 1px var(--primary-color);
+  border-radius: 8px;
+  font-family: "Pixelify Sans";
+  background-color: var(--primary-color);
+  color: white;
+  padding: 6px 16px;
+  font-size: 1rem;
+  cursor: pointer;
+  transition: all 0.2s;
+  font-weight: bold;
+}
+.main-button:disabled {
+  cursor: not-allowed;
+}
+.main-button:hover:not(:disabled) {
+  background-color: var(--primary-color-lighter);
+  color: white;
+  box-shadow: var(--pixel-shadow-small-primary);
+  transform: translate(-2px, -2px);
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(20px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+@keyframes glow {
+  0% {
+    box-shadow: 0 0 5px var(--glow-color-secondary);
+  }
+  50% {
+    box-shadow: 0 0 20px var(--glow-color);
+  }
+  100% {
+    box-shadow: 0 0 5px var(--glow-color-secondary);
+  }
+}
+.results-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+  padding: 0;
+  max-width: 1200px;
+  margin: 0 auto 20px;
+  animation: fadeIn 0.5s ease-out forwards;
+  position: relative;
+}
+.results-grid::before {
+  position: absolute;
+  top: 0;
+  left: -20px;
+  right: -20px;
+  height: 2px;
+  background: repeating-linear-gradient(90deg, var(--primary-color) 0px, var(--primary-color) 4px, transparent 4px, transparent 8px);
+}
+
+.game-card {
+  background: var(--card-background);
+  overflow: hidden;
+  transition: all 0.2s;
+  display: flex;
+  gap: 4px;
+  opacity: 0;
+  animation: fadeIn 0.5s ease-out forwards;
+  animation-delay: calc(var(--animation-order) * 0.1s);
+  position: relative;
+  padding: 14px;
+  max-width: 800px;
+  border-radius: 12px;
+  cursor: pointer;
+}
+.game-card:hover {
+  transform: translate(-2px, -2px) !important;
+  box-shadow: var(--pixel-shadow-hover);
+}
+.game-card .game-image {
+  width: 60px;
+  height: 60px;
+  object-fit: cover;
+  flex-shrink: 0;
+  border: 1px dashed #ddd;
+  image-rendering: pixelated;
+  margin-top: 6px;
+}
+.game-card .debug-info {
+  width: 200px;
+  margin-left: 16px;
+  font-size: 14px;
+  color: var(--text-secondary);
+}
+.game-card .debug-info .debug-info-title {
+  font-weight: bold;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+  font-size: 16px;
+  color: var(--text-color);
+}
+.game-card .game-content {
+  padding: 0 16px;
+  flex-grow: 1;
+  position: relative;
+}
+.game-card .game-content::after {
+  content: "";
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(180deg, var(--primary-color) 0px, var(--primary-color) 4px, transparent 4px, transparent 8px);
+  opacity: 0.6;
+}
+.game-card .game-title {
+  font-size: 1.25rem;
+  margin: 4px 0 8px 0;
+  color: var(--text-color);
+  font-family: "blender";
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.game-card .game-title sup {
+  font-size: 0.6rem;
+  font-family: "blender";
+  font-weight: normal;
+  background-color: var(--primary-color);
+  color: white;
+  padding: 2px 4px;
+  border-radius: 4px;
+  margin: 0 6px;
+  position: relative;
+  top: 2px;
+}
+.game-card .game-meta-numerical {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.game-card .game-meta-numerical > div {
+  display: flex;
+  align-items: center;
+  padding: 0px 4px;
+  line-height: 20px;
+  height: 20px;
+  background-color: var(--secondary-color);
+  color: white;
+  font-size: 0.8rem;
+  border-radius: 4px;
+}
+.game-card .game-meta-numerical > div img {
+  margin-right: 4px;
+}
+.game-card .game-meta-numerical > div span {
+  margin-left: 4px;
+}
+.game-card .game-meta {
+  color: var(--text-secondary);
+  font-size: 0.9rem;
+  margin: 8px 0 12px;
+}
+.game-card .game-meta > div {
+  margin-bottom: 4px;
+}
+.game-card .game-meta > div i {
+  width: 20px;
+  font-size: 14px;
+  text-align: center;
+  margin-right: 4px;
+}
+
+.game-detail-popover {
+  position: absolute;
+  background: var(--card-background);
+  box-shadow: var(--pixel-shadow);
+  padding: 16px;
+  max-width: 300px;
+  z-index: 1000;
+  padding: 16px;
+  background: var(--card-background);
+  border-radius: 14px;
+}
+.game-detail-popover .popover-content {
+  position: relative;
+  padding-left: 12px;
+}
+.game-detail-popover .popover-content::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  bottom: 0;
+  width: 2px;
+  background: repeating-linear-gradient(180deg, var(--primary-color) 0px, var(--primary-color) 4px, transparent 4px, transparent 8px);
+  opacity: 0.3;
+}
+.game-detail-popover .popover-title {
+  font-family: "Pixelify Sans", monospace;
+  font-size: 1.2rem;
+  margin-bottom: 12px;
+  color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.game-detail-popover .popover-details {
+  font-family: "Pixelify Sans", monospace;
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+  margin-bottom: 8px;
+}
+.game-detail-popover .popover-details:last-child {
+  margin-bottom: 0;
+}
+.game-detail-popover .popover-rating {
+  display: inline-block;
+  padding: 2px 8px;
+  border: var(--pixel-border);
+  background: rgba(5, 210, 228, 0.1);
+  font-family: "Pixelify Sans", monospace;
+  font-weight: bold;
+  color: var(--primary-color);
+  margin-top: 8px;
+}
+
+.modal-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(0, 0, 0, 0.5);
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  z-index: 1000;
+  backdrop-filter: blur(4px);
+}
+
+.game-detail-modal {
+  position: relative;
+  background: var(--card-background);
+  border: var(--pixel-border);
+  box-shadow: var(--pixel-shadow);
+  border-radius: 8px;
+  width: 90%;
+  max-width: 600px;
+  max-height: 90vh;
+  overflow-y: auto;
+  padding: 20px;
+  animation: modalAppear 0.3s cubic-bezier(0.75, 0.31, 0.42, 1.51);
+  view-transition-name: game-card;
+}
+.game-detail-modal::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, var(--primary-color), var(--secondary-color));
+}
+.game-detail-modal .close-button {
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: var(--text-color);
+  font-family: "Pixelify Sans";
+  padding: 2px 8px;
+  border: var(--pixel-border);
+  background: var(--light-bg);
+  border-radius: 4px;
+}
+.game-detail-modal .close-button:hover {
+  background: var(--secondary-color);
+  color: white;
+}
+.game-detail-modal .modal-content {
+  padding: 0;
+}
+.game-detail-modal .modal-header {
+  margin-bottom: 20px;
+  padding-bottom: 10px;
+  border-bottom: 2px solid var(--light-bg);
+}
+.game-detail-modal .modal-title {
+  font-family: "Pixelify Sans";
+  font-size: 1.5rem;
+  margin: 0 0 10px 0;
+  color: var(--text-color);
+  text-transform: uppercase;
+  letter-spacing: 1px;
+}
+.game-detail-modal .modal-meta {
+  display: flex;
+  gap: 20px;
+  align-items: center;
+  font-family: "Pixelify Sans";
+  font-size: 0.9rem;
+  color: var(--text-secondary);
+}
+.game-detail-modal .modal-year {
+  background: var(--primary-color);
+  color: white;
+  padding: 2px 8px;
+  border-radius: 4px;
+}
+.game-detail-modal .modal-rating {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+}
+.game-detail-modal .modal-body .modal-description {
+  font-family: "Pixelify Sans";
+  font-size: 1rem;
+  line-height: 1.5;
+  color: var(--text-color);
+  margin-bottom: 20px;
+}
+.game-detail-modal .modal-body .modal-details {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: 16px;
+  padding: 16px;
+  background: var(--light-bg);
+  border: var(--pixel-border);
+  border-radius: 4px;
+}
+.game-detail-modal .modal-body .modal-details > div {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-family: "Pixelify Sans";
+  font-size: 0.9rem;
+  color: var(--text-color);
+}
+.game-detail-modal .modal-body .modal-details > div i {
+  color: var(--primary-color);
+  font-size: 1rem;
+}
+
+@keyframes modalAppear {
+  from {
+    opacity: 0;
+    transform: scale(0.85);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+@media (max-width: 768px) {
+  .container-md {
+    padding: 0 16px;
+  }
+  .title {
+    font-size: 2rem;
+  }
+  .game-card {
+    flex-direction: column;
+  }
+  .game-card .game-image {
+    width: 100%;
+    height: 200px;
+  }
+}
+.typewriter {
+  width: var(--typewriter-width, 6px);
+  height: var(--typewriter-height, 0.8em);
+  background-color: var(--typewriter-color, var(--text-color));
+  animation: typing 1.2s infinite ease-in-out;
+  display: inline-block;
+  margin: 0 2px;
+  position: relative;
+  top: 1px;
+}
+
+@keyframes typing {
+  0% {
+    opacity: 1;
+  }
+  50% {
+    opacity: 0;
+  }
+  80% {
+    opacity: 1;
+  }
+}
+.loading-container {
+  margin-top: 40px;
+}
+.loading-container .loading-text {
+  font-family: "Pixelify Sans";
+  text-transform: uppercase;
+  font-size: 1em;
+}
+.loading-container .loading-bar {
+  display: none;
+  border: 2px solid var(--primary-color);
+  width: 300px;
+  height: 16px;
+  border-radius: 4px;
+  margin-top: 2px;
+  padding: 1px;
+}
+.loading-container .loading-bar-inner {
+  height: 100%;
+  background: repeating-linear-gradient(90deg, var(--primary-color) 0px, var(--primary-color) 4px, transparent 4px, transparent 8px);
+}
+
+/*# sourceMappingURL=styles.css.map */

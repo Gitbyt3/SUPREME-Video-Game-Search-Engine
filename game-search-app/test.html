@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html>
+    <body>
+        <ul>
+            <li id="li" onclick="showModal()" style="view-transition-name: modal;">test 1</li>
+            <li>test 2</li>
+            <li>test 3</li>
+        </ul>
+
+        <div id="modal">
+            <h1>Test</h1>
+            <p>This is a test paragraph.</p>
+        </div>
+
+        <style>
+            #modal {
+                display: none;
+                position: fixed;
+                top: 50%;
+                left: 50%;
+                transform: translate(-50%, -50%);
+                border: 1px solid #000;
+                background-color: white;
+                padding: 20px;
+                border-radius: 5px;
+                box-shadow: 0 0 10px rgba(0, 0, 0, 0.5);
+                view-transition-name: modal;
+            }
+            li {
+                display: inline-block;
+                border: 1px solid #000;
+            }
+        </style>
+        <script>
+            function showModal() {
+                const modal = document.getElementById("modal");
+                const li = document.getElementById("li");
+                document.startViewTransition(() => {
+                    li.style.visibility = "hidden";
+                    li.style.viewTransitionName = "unset";
+                    modal.style.display = "block";
+                });
+            }
+        </script>
+    </body>
+</html>
