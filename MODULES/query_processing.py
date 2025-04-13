@@ -82,9 +82,28 @@ def execute(query, synonym_expansion=False):
 
     normalised_expanded = query_expansion(query_normalisation(query), expansion_terms, synonym_expansion=synonym_expansion)
     parsed = query_parsing(normalised_expanded, developers, platforms, genres)
-    output = {'Original':query, 'Processed':normalised_expanded, 'Developers':parsed['Developers'], 'Platforms':parsed['Platforms'], 'Genres':parsed['Genres'], 'Years':parsed['Years']}
-    return output
+    # Final dictionary
+    output = {
+        'Original': query,
+        'Processed': normalised_expanded,
+        'Developers': parsed['Developers'],
+        'Platforms': parsed['Platforms'],
+        'Genres': parsed['Genres'],
+        'Years': parsed['Years']
+    }
 
+    # Add intent detection
+    def detect_intent(query_text):
+        query_text = query_text.lower()
+        return {
+            "rating_boost": any(kw in query_text for kw in ["best", "top-rated", "highest rated"]),
+            "recency_boost": any(kw in query_text for kw in ["latest", "new", "2025", "2024"]),
+            "player_boost": any(kw in query_text for kw in ["most played", "popular"])
+        }
+
+    output["Intent"] = detect_intent(query)
+
+    return output
 
 if __name__ == "__main__":
     init('test')
