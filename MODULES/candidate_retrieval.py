@@ -5,6 +5,15 @@ from sklearn.pipeline import Pipeline
 from sklearn.preprocessing import MultiLabelBinarizer, normalize
 from sentence_transformers import SentenceTransformer
 import faiss
+import re
+from rank_bm25 import BM25Okapi
+import sys
+
+def tokenize(text):
+    # Remove punctuation and convert to lowercase
+    text = re.sub(r'[^\w\s]', '', text)
+    return text.lower().split()
+
 
 def BM25_field_matrix(df, game_attribute, k_1=1.2, b=0.8, max_features=50000, min_df=2):
     documents = df[game_attribute].to_list()
@@ -48,17 +57,23 @@ def retrieve_top_k_bm25(query, bm25_list, weights, doc_titles, top_k=100, epsilo
             doc_scores = np.full((matrix.shape[0], 1), epsilon)
         return doc_scores
     bm25_weighted = np.zeros((bm25_list[0][0].shape[0], 1))
+    bm25_scores = []
     for bm25, weight in zip(bm25_list, weights):
-        bm25_weighted += weight * bm25_filtered(query, bm25)
+        score = weight * bm25_filtered(query, bm25)
+        bm25_scores.append(score.tolist())
+        bm25_weighted += score
+    bm25_scores = np.column_stack(bm25_scores)
     scores = np.ravel(bm25_weighted)
-    ranked = sorted(zip(enumerate(doc_titles), scores), key=lambda zipper: zipper[1], reverse=True)
+    ranked = sorted(zip(enumerate(doc_titles), scores, bm25_scores), key=lambda zipper: zipper[1], reverse=True)
     ranked_topk = ranked[:top_k]
     output = []
+    score_details = []
     for k in ranked_topk:
-        doc_id, doc_title, score = k[0][0], k[0][1], k[1]
-        output.append((query['Processed'], doc_title, doc_id, score, 0))
+        doc_id, doc_title, score, score_detail = k[0][0], k[0][1], k[1], k[2]
+        output.append((query['Processed'], doc_title, doc_id, score))
+        score_details.append(score_detail)
 
-    return output
+    return output, score_details
 
 def retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles, top_k=100):
     model = SentenceTransformer('all-MiniLM-L6-v2')
@@ -79,9 +94,40 @@ def retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_t
 
     output = []
     for d, i in zip(distance, index):
-        output.append((query['Processed'], doc_titles[i], i, 0, d))
+        output.append((query['Processed'], doc_titles[i], i, d))
 
     return output
+
+bm25_models = None
+def init_bm25_models(documents):
+    global bm25_models
+    bm25_models = [
+        BM25Okapi(documents['Title'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.2, b=0.4),
+        BM25Okapi(documents['Developers'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.1, b=0.3),
+        BM25Okapi(documents['Summary'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.2, b=0.8),
+        BM25Okapi(documents['Platforms'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
+        BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
+    ]
+def retrieve_top_k_bm25_new(processed_query, top_k=100):
+    global bm25_models
+    query = tokenize(processed_query['Processed'])
+    scores = np.zeros((len(bm25_models), len(doc_titles)))
+    score_details = []
+    for i, model in enumerate(bm25_models):
+        model_score = model.get_scores(query)
+        score_details.append(model_score.tolist())
+        scores[i] = model_score * BM25_weights[i]
+    scores = np.sum(scores, axis=0)
+    score_details = np.column_stack(score_details)
+    ranked = sorted(zip(enumerate(doc_titles), scores, score_details), key=lambda zipper: zipper[1], reverse=True)
+    ranked_topk = ranked[:top_k]
+    output = []
+    details_output = []
+    for k in ranked_topk:
+        doc_id, doc_title, score, details = k[0][0], k[0][1], k[1], k[2]
+        details_output.append(details)
+        output.append((processed_query['Processed'], doc_title, doc_id, score))
+    return output, details_output
 
 doc_titles = None
 bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights = None, None, None, None, None, None
@@ -89,21 +135,25 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
     global bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights, doc_titles
     
     BM25_weights = bm25_weights
-    bm25_matrices = [
-        BM25_field_matrix(games_bm25, 'Title', k_1=1.2, b=0.4, max_features=5000, min_df=1),
-        BM25_field_matrix(games_bm25, 'Developers', k_1=1.1, b=0.3, max_features=4000, min_df=1),
-        BM25_field_matrix(games_bm25, 'Summary', k_1=1.8, b=0.8, max_features=20000, min_df=2),
-        BM25_field_matrix(games_bm25, 'Platforms', k_1=1.0, b=0.2, max_features=500, min_df=2),
-        BM25_field_matrix(games_bm25, 'Genres', k_1=1.0, b=0.2, max_features=800, min_df=2)
-                    ]
+    # bm25_matrices = [
+    #     BM25_field_matrix(games_bm25, 'Title', k_1=1.2, b=0.4, max_features=5000, min_df=1),
+    #     BM25_field_matrix(games_bm25, 'Developers', k_1=1.1, b=0.3, max_features=4000, min_df=1),
+    #     BM25_field_matrix(games_bm25, 'Summary', k_1=1.8, b=0.8, max_features=20000, min_df=2),
+    #     BM25_field_matrix(games_bm25, 'Platforms', k_1=1.0, b=0.2, max_features=500, min_df=2),
+    #     BM25_field_matrix(games_bm25, 'Genres', k_1=1.0, b=0.2, max_features=800, min_df=2)
+    #                 ]
+    init_bm25_models(games_bm25)
     faiss_index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
     doc_titles = games_bm25['Title']
 
 def execute(query, top_k=100):
-    topk_bm25 = retrieve_top_k_bm25(query, bm25_matrices, BM25_weights, doc_titles)
+    # topk_bm25, topk_bm25_scores = retrieve_top_k_bm25(query, bm25_matrices, BM25_weights, doc_titles)
+    topk_bm25, topk_bm25_scores = retrieve_top_k_bm25_new(query, top_k=top_k)
     topk_faiss = retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles)
-    topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score','SBERT Score'])
-    topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID','BM25 Score','SBERT Score'])
-    results = pd.concat([topk_bm25_df, topk_faiss_df], axis=0).drop_duplicates(subset=['Query','ID']).sort_values(by='Query',ignore_index='True')
+    topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
+    topk_bm25_df['BM25_Scores'] = topk_bm25_scores
+    topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID', 'SBERT Score']).drop(columns=['Title'])
+    results = pd.merge(topk_bm25_df, topk_faiss_df, on=['Query', 'ID'], how='outer').fillna(0)
+    # results = pd.concat([topk_bm25_df, topk_faiss_df], axis=0).drop_duplicates(subset=['Query','ID']).sort_values(by='Query',ignore_index='True')
 
     return results
