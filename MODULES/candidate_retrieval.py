@@ -1,91 +1,72 @@
 import pandas as pd
 import numpy as np
-from sklearn.feature_extraction.text import TfidfTransformer, CountVectorizer
-from sklearn.pipeline import Pipeline
+import os
+import pickle
 from sklearn.preprocessing import MultiLabelBinarizer, normalize
 from sentence_transformers import SentenceTransformer
 import faiss
 import re
 from rank_bm25 import BM25Okapi
-import sys
 
 def tokenize(text):
     # Remove punctuation and convert to lowercase
     text = re.sub(r'[^\w\s]', '', text)
     return text.lower().split()
 
+def save_embeddings(embeddings, onehot_encoders, faiss_index, file_path):
+    with open(file_path, 'wb') as file:
+        pickle.dump({'embeddings':embeddings, 'onehot_encoders':onehot_encoders, 'faiss_index':faiss_index}, file)
 
-def BM25_field_matrix(df, game_attribute, k_1=1.2, b=0.8, max_features=50000, min_df=2):
-    documents = df[game_attribute].to_list()
-    pipe = Pipeline([('count', CountVectorizer(max_features=max_features, min_df=min_df)), ('tfid', TfidfTransformer())]).fit(documents)
-    term_doc_matrix = pipe['count'].transform(documents)
-    doc_lengths, avg_dl, idfs, tfs = term_doc_matrix.sum(axis=1), np.mean(term_doc_matrix.sum(axis=1)), pipe['tfid'].idf_.reshape(1, -1), term_doc_matrix.multiply(1 / term_doc_matrix.sum(axis=1))
-    numerator = (k_1 + 1) * tfs
-    denominator = k_1 * ((1 - b) + b * (doc_lengths / avg_dl)) + tfs
-    BM25 = numerator.multiply(1 / denominator)
-    BM25 = BM25.multiply(idfs)
-    vocab = pipe['count'].get_feature_names_out()
-    vocab = {term:index for index, term in enumerate(vocab)}
-    return BM25.tocsr(), vocab
+def load_embeddings(file_path):
+    with open(file_path, 'rb') as file:
+        data = pickle.load(file)
+    return data['embeddings'], data['onehot_encoders'], data['faiss_index']
 
-def SBERT_embed_FAISS_index(games, weights):
+
+
+sbert_embeddings, faiss_index, mlb_dev, mlb_plat, mlb_genre = None, None, None, None, None
+def init_sbert_faiss(games, weights):
+    global sbert_embeddings, faiss_index, mlb_dev, mlb_plat, mlb_genre
+
+    os.makedirs(os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'embeddings')), exist_ok=True)
+    embedding_filepath = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'embeddings', 'sbert_embeddings.pkl'))
+
+    if os.path.exists(embedding_filepath):
+        print('Loading SBERT embeddings...')
+        sbert_embeddings, encoders, faiss_index = load_embeddings(embedding_filepath)
+        mlb_dev, mlb_plat, mlb_genre = encoders['mlb_dev'], encoders['mlb_plat'], encoders['mlb_genre']
+    
+    else:
+        print('Creating new embeddings...')
+        model = SentenceTransformer('all-MiniLM-L6-v2')
+        embeddings = model.encode(games['Title'] +  ' ' + games['Summary'], show_progress_bar=True, normalize_embeddings=False)
+        mlb_dev, mlb_plat, mlb_genre = MultiLabelBinarizer(), MultiLabelBinarizer(), MultiLabelBinarizer()
+        developer_onehot, platform_onehot, genre_onehot = mlb_dev.fit_transform(games['Developers']), mlb_plat.fit_transform(games['Platforms']), mlb_genre.fit_transform(games['Genres'])
+        sbert_embeddings = normalize(np.hstack((
+                            weights[0] * embeddings,
+                            weights[1] * developer_onehot,
+                            weights[2] * platform_onehot,
+                            weights[3] * genre_onehot
+                            )), norm='l2', axis=1)
+        faiss_index = faiss.IndexFlatIP(sbert_embeddings.shape[1])
+        faiss_index.add(sbert_embeddings)
+        save_embeddings(sbert_embeddings, {'mlb_dev':mlb_dev, 'mlb_plat':mlb_plat, 'mlb_genre':mlb_genre}, faiss_index, embedding_filepath)
+
+
+
+def retrieve_top_k_faiss(query, top_k=100):
+    global sbert_embeddings, faiss_index, mlb_dev, mlb_plat, mlb_genre
+
     model = SentenceTransformer('all-MiniLM-L6-v2')
-    embeddings = model.encode(games['Title'] +  ' ' + games['Summary'], show_progress_bar=True, normalize_embeddings=False)
-    mlb1, mlb2, mlb3 = MultiLabelBinarizer(), MultiLabelBinarizer(), MultiLabelBinarizer()
-    developer_onehot, platform_onehot, genre_onehot = mlb1.fit_transform(games['Developers']), mlb2.fit_transform(games['Platforms']), mlb3.fit_transform(games['Genres'])
-    doc_embeddings = normalize(np.hstack((
-                        weights[0] * embeddings,
-                        weights[1] * developer_onehot,
-                        weights[2] * platform_onehot,
-                        weights[3] * genre_onehot
-                        )), norm='l2', axis=1)
-    data_index = faiss.IndexFlatIP(doc_embeddings.shape[1])
-    data_index.add(doc_embeddings)
-    return data_index, mlb1, mlb2, mlb3
-
-def retrieve_top_k_bm25(query, bm25_list, weights, doc_titles, top_k=100, epsilon=1e-6):
-    def bm25_filtered(query, bm25):
-        matrix, vocab = bm25
-        query = query['Processed'].split(' ')
-        query_tokens = [vocab[term] if term in vocab else 'OOV' for term in query]
-        IV = [term for term in query_tokens if term != 'OOV']
-        if len(IV) != 0:
-            doc_scores = matrix[:, IV].sum(axis=1)
-            if 'OOV' in query:
-                doc_scores += np.full((matrix.shape[0], 1), epsilon)
-        else:
-            doc_scores = np.full((matrix.shape[0], 1), epsilon)
-        return doc_scores
-    bm25_weighted = np.zeros((bm25_list[0][0].shape[0], 1))
-    bm25_scores = []
-    for bm25, weight in zip(bm25_list, weights):
-        score = weight * bm25_filtered(query, bm25)
-        bm25_scores.append(score.tolist())
-        bm25_weighted += score
-    bm25_scores = np.column_stack(bm25_scores)
-    scores = np.ravel(bm25_weighted)
-    ranked = sorted(zip(enumerate(doc_titles), scores, bm25_scores), key=lambda zipper: zipper[1], reverse=True)
-    ranked_topk = ranked[:top_k]
-    output = []
-    score_details = []
-    for k in ranked_topk:
-        doc_id, doc_title, score, score_detail = k[0][0], k[0][1], k[1], k[2]
-        output.append((query['Processed'], doc_title, doc_id, score))
-        score_details.append(score_detail)
-
-    return output, score_details
-
-def retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles, top_k=100):
-    model = SentenceTransformer('all-MiniLM-L6-v2')
-    text_embeddings = model.encode(query['Processed'], show_progress_bar=True, normalize_embeddings=False)
-    dev_onehot = mlb_dev.transform(np.array([query['Developers']]).reshape(1, -1))
-    plat_onehot = mlb_plat.transform(np.array([query['Platforms']]).reshape(1, -1))
+    embeddings = model.encode(query['Processed'], show_progress_bar=True, normalize_embeddings=False)
+    developer_onehot = mlb_dev.transform(np.array([query['Developers']]).reshape(1, -1))
+    platform_onehot = mlb_plat.transform(np.array([query['Platforms']]).reshape(1, -1))
     genre_onehot = mlb_genre.transform(np.array([query['Genres']]).reshape(1, -1))
 
     query_embeddings = normalize(np.hstack((
-                    text_embeddings.reshape(1, -1),
-                    dev_onehot,
-                    plat_onehot,
+                    embeddings.reshape(1, -1),
+                    developer_onehot,
+                    platform_onehot,
                     genre_onehot
                     )), norm='l2', axis=1)
 
@@ -98,6 +79,8 @@ def retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_t
 
     return output
 
+
+
 bm25_models = None
 def init_bm25_models(documents):
     global bm25_models
@@ -108,8 +91,11 @@ def init_bm25_models(documents):
         BM25Okapi(documents['Platforms'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
         BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
     ]
+
+
+
 def retrieve_top_k_bm25_new(processed_query, top_k=100):
-    global bm25_models
+    global bm25_models, BM25_weights, doc_titles
     query = tokenize(processed_query['Processed'])
     scores = np.zeros((len(bm25_models), len(doc_titles)))
     score_details = []
@@ -129,31 +115,27 @@ def retrieve_top_k_bm25_new(processed_query, top_k=100):
         output.append((processed_query['Processed'], doc_title, doc_id, score))
     return output, details_output
 
-doc_titles = None
-bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights = None, None, None, None, None, None
+
+
+BM25_weights, doc_titles = None, None
 def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
-    global bm25_matrices, faiss_index, mlb_dev, mlb_plat, mlb_genre, BM25_weights, doc_titles
-    
+    global BM25_weights, doc_titles
     BM25_weights = bm25_weights
-    # bm25_matrices = [
-    #     BM25_field_matrix(games_bm25, 'Title', k_1=1.2, b=0.4, max_features=5000, min_df=1),
-    #     BM25_field_matrix(games_bm25, 'Developers', k_1=1.1, b=0.3, max_features=4000, min_df=1),
-    #     BM25_field_matrix(games_bm25, 'Summary', k_1=1.8, b=0.8, max_features=20000, min_df=2),
-    #     BM25_field_matrix(games_bm25, 'Platforms', k_1=1.0, b=0.2, max_features=500, min_df=2),
-    #     BM25_field_matrix(games_bm25, 'Genres', k_1=1.0, b=0.2, max_features=800, min_df=2)
-    #                 ]
-    init_bm25_models(games_bm25)
-    faiss_index, mlb_dev, mlb_plat, mlb_genre = SBERT_embed_FAISS_index(games_SBERT, SBERT_weights)
     doc_titles = games_bm25['Title']
 
+    init_bm25_models(games_bm25)
+    init_sbert_faiss(games_SBERT, SBERT_weights)
+
+
+
 def execute(query, top_k=100):
-    # topk_bm25, topk_bm25_scores = retrieve_top_k_bm25(query, bm25_matrices, BM25_weights, doc_titles)
     topk_bm25, topk_bm25_scores = retrieve_top_k_bm25_new(query, top_k=top_k)
-    topk_faiss = retrieve_top_k_faiss(query, faiss_index, mlb_dev, mlb_plat, mlb_genre, doc_titles)
+    topk_faiss = retrieve_top_k_faiss(query, top_k=top_k)
+
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
     topk_bm25_df['BM25_Scores'] = topk_bm25_scores
+    
     topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID', 'SBERT Score']).drop(columns=['Title'])
     results = pd.merge(topk_bm25_df, topk_faiss_df, on=['Query', 'ID'], how='outer').fillna(0)
-    # results = pd.concat([topk_bm25_df, topk_faiss_df], axis=0).drop_duplicates(subset=['Query','ID']).sort_values(by='Query',ignore_index='True')
 
     return results
