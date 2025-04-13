@@ -1,6 +1,4 @@
-import requests
 import pandas as pd
-from io import StringIO
 from ast import literal_eval as string_to_list
 import preprocessing as pp
 import query_processing as qp
@@ -9,7 +7,14 @@ import os
 import json
 import sys
 from sklearn.preprocessing import StandardScaler
+import numpy as np
 
+class NumpyEncoder(json.JSONEncoder):
+    def default(self, obj):
+        if isinstance(obj, np.ndarray):
+            return obj.tolist()
+        return super().default(obj)
+            
 def filter_games(games):
     games['Summary'] = games['Summary'].fillna('')
     games = games.drop_duplicates(subset='Title', ignore_index=True)
@@ -75,12 +80,13 @@ def main():
         candidates = cr.execute(processed_query)
         scaler = StandardScaler()
         # candidates[['BM25 Score', 'SBERT Score']] = scaler.fit_transform(candidates[['BM25 Score', 'SBERT Score']])
-        candidates['weighted_score'] = candidates['BM25 Score'] * .7 + candidates['SBERT Score'] * .3
-        candidates = candidates.sort_values(by='weighted_score', ascending=False)
+        # candidates['weighted_score'] = candidates['BM25 Score'] * .7 + candidates['SBERT Score'] * .3
+        candidates = candidates.sort_values(by='BM25 Score', ascending=False)
+    
         sys.stdout.write(json.dumps({
             'id': req_id,
-            'data': candidates[['Title', 'ID', 'BM25 Score', 'SBERT Score', 'weighted_score']].head(10).to_dict(orient='records')
-        }))
+            'data': candidates[['Title', 'ID', 'BM25 Score', 'BM25_Scores']].head(10).to_dict(orient='records')
+        }, cls=NumpyEncoder))
         sys.stdout.flush()
 
     print('\nExiting the program...')

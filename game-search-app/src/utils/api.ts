@@ -16,6 +16,7 @@ export const query = async (q: string) =>
         }
 
         item['bm25Score'] = item['BM25 Score'];
+        item['bm25Scores'] = item['BM25_Scores'] || [];
         item['sbertScore'] = item['SBERT Score'];
 
         const date = new Date(item['release_date']);
