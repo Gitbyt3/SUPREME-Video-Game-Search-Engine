@@ -1,6 +1,4 @@
 import pandas as pd
-import os
-import json
 import unicodedata
 import re
 from ast import literal_eval as string_to_list
@@ -17,15 +15,18 @@ expansion_terms = None
 developers, platforms, genres = set(), set(), set()
 def init(games, expansion_terms_config=None):
     global expansion_terms, developers, platforms, genres
+
     for developers_list, platforms_list, genres_list in zip(games['Developers'], games['Platforms'], games['Genres']):
         developers.update(set(developers_list)), platforms.update(set(platforms_list)), genres.update(set(genres_list))
     developers, platforms, genres = set(word.lower() for word in developers), set(word.lower() for word in platforms), set(word.lower() for word in genres)
 
     expansion_terms = expansion_terms_config
 
-    return developers, platforms, genres
+
 
 def execute(query, synonym_expansion=False):
+    global expansion_terms, developers, platforms, genres
+
     def query_normalisation(query):
         query = query.lower()
         query = unicodedata.normalize('NFKD', query)
