@@ -70,7 +70,7 @@ def main():
         query = message['query']
         req_id = message['id']
         processed_query = qp.execute(query)
-        sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query + '\n')
+        sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query['Processed'] + '\n')
         sys.stderr.flush()
         candidates = cr.execute(processed_query)
         scaler = StandardScaler()
