@@ -96,7 +96,7 @@ def main():
         candidates = pd.merge(candidates, 
             games[['ID', 'Plays', 'Release_Date', 'Playing', 'Rating', 'Genres', 'Platforms']], 
             on='ID', 
-            how='left')
+            how='left').fillna(0)
 
         qr.init(1) # bypass the model loading
         results = qr.execute(0, processed_query, candidates, useLTR=False)
