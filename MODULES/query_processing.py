@@ -22,6 +22,7 @@ def init(games, expansion_terms_config=None):
 
     expansion_terms = expansion_terms_config
 
+    return developers, platforms, genres
 
 
 def execute(query, synonym_expansion=False):
@@ -83,6 +84,7 @@ def execute(query, synonym_expansion=False):
 
     normalised_expanded = query_expansion(query_normalisation(query), expansion_terms, synonym_expansion=synonym_expansion)
     parsed = query_parsing(normalised_expanded, developers, platforms, genres)
+    
     # Final dictionary
     output = {
         'Original': query,

@@ -50,7 +50,7 @@ def main():
     # Load the expansion terms from the JSON file for query processing
     with open(os.path.abspath(os.path.join(os.path.dirname(__file__), '../Query_Processing/expansion_terms.json')), 'r') as json_file:
         expansion_terms = json.load(json_file)
-    qp.init(games_SBERT, expansion_terms)
+    developers_set, platforms_set, genres_set = qp.init(games_SBERT, expansion_terms)
 
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
     BM25_weights = [2.0, 0.8, 1.0, 1.4, 1.4]
@@ -83,7 +83,7 @@ def main():
         processed_query = qp.execute(query)
         sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query['Processed'] + '\n')
         sys.stderr.flush()
-        candidates = cr.execute(processed_query)
+        candidates = cr.execute(processed_query, platforms=platforms_set)
         # scaler = StandardScaler()
         # candidates[['BM25 Score', 'SBERT Score']] = scaler.fit_transform(candidates[['BM25 Score', 'SBERT Score']])
         # try use Sigmoid scaling

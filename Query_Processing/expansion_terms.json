@@ -67,6 +67,7 @@
     "jrpg": "rpg",
     "wrpg": "rpg",
     "mmorpg": "rpg",
+    "rpg": "adventure",
     "fighter": "fighting",
     "beat 'em up": "brawler",
     "hack and slash": "brawler",

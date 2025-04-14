@@ -96,17 +96,39 @@ def init_bm25_models(documents):
     ]
 
 
+def remove_platforms(query, platforms):
+    """
+    Removes any occurrence of platform names from the query string.
+    
+    Parameters:
+        query (str): The input string that may contain platform names.
+        platforms (list): A list of platform names (as strings) to remove.
+    
+    Returns:
+        str: The query string after removing platform names.
+    """
+    platforms_sorted = sorted(list(platforms), key=len, reverse=True)
+    for platform in platforms_sorted:
+        # Escape the platform text in case it has special regex characters
+        pattern = re.escape(platform)
+        # Remove the platform string globally from the query
+        query = re.sub(pattern, '', query)
+    # Clean extra spaces that may have resulted from the removal
+    query = re.sub(r'\s+', ' ', query).strip()
+    return query
 
-def retrieve_top_k_bm25_new(processed_query, top_k=100):
+def retrieve_top_k_bm25_new(processed_query, top_k=100, platforms=None):
     global bm25_models, BM25_weights, doc_titles
     query = tokenize(processed_query['Processed'])
-    query_original = tokenize(processed_query['Original'])
     scores = np.zeros((len(bm25_models), len(doc_titles)))
     score_details = []
     for i, model in enumerate(bm25_models):
         # for title we use the original query
         if i == 0:
-            model_score = model.get_scores(query_original)
+            # remove platforms from the query when performing title matching
+            _query = processed_query['Original']
+            _query = tokenize(remove_platforms(_query, platforms) if platforms else _query)
+            model_score = model.get_scores(_query)
         else:
             model_score = model.get_scores(query)
         score_details.append(model_score.tolist())
@@ -139,8 +161,8 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
 
 
 
-def execute(query, top_k=100):
-    topk_bm25, topk_bm25_scores, scores, score_details = retrieve_top_k_bm25_new(query, top_k=top_k)
+def execute(query, top_k=100, platforms=None):
+    topk_bm25, topk_bm25_scores, scores, score_details = retrieve_top_k_bm25_new(query, top_k=top_k, platforms=platforms)
     topk_faiss = retrieve_top_k_faiss(query, top_k=top_k * 3)
 
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
