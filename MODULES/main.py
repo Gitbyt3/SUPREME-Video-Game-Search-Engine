@@ -98,8 +98,8 @@ def main():
             on='ID', 
             how='left').fillna(0)
 
-        qr.init(1) # bypass the model loading
-        results = qr.execute(0, processed_query, candidates, useLTR=False)
+        qr.init() # bypass the model loading
+        results = qr.execute(0, processed_query, candidates, useLTR=True)
     
         sys.stdout.write(json.dumps({
             'id': req_id,
