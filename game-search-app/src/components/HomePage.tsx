@@ -39,7 +39,7 @@ const HomePage: React.FC = () => {
               <div className='team-popup-content'>
                 <div>
                   <div><img src='./assets/avatar-xiao.webp' alt='Xiao Yang' width={28}></img>Xiao Yang <i>@_aotake_</i></div>
-                  <p>"You're welcome."</p>
+                  <p>"Curiosity is the key."</p>
                 </div>
                 <div>
                   <div><img src='./assets/avatar-lucas.webp' alt='Lucas Ong' width={28}></img>Lucas Ong <i>@shr00ms007</i></div>
