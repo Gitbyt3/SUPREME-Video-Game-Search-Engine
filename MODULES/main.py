@@ -53,7 +53,7 @@ def main():
     developers_set, platforms_set, genres_set = qp.init(games_SBERT, expansion_terms)
 
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
-    BM25_weights = [2.0, 0.8, 1.0, 1.4, 1.4]
+    BM25_weights = [1.7, 0.8, 1.0, 1.4, 1.4]
     cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights)
     qr.init()
 

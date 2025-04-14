@@ -102,8 +102,8 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
     if not useLTR:
         df["Final Score"] = (
             df["BM25 Score"] * 0.7 + df["SBERT Score"] * 0.3
-            + df["rating_signal"] * 0.2 + df["popularity_signal"] * 0.3
-            + df["recency_signal"] * 0.2
+            + df["rating_signal"] * 0.1 + df["popularity_signal"] * 0.3
+            + df["recency_signal"] * 0.2 + df["genre_match"] * 0.1 + df["platform_match"] * 0.1
         )
     else:
         # Score using LambdaMART

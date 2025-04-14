@@ -4,12 +4,14 @@ import re
 from ast import literal_eval as string_to_list
 import string
 from nltk.tokenize import word_tokenize
+# from nltk import pos_tag
 from nltk.corpus import stopwords, wordnet
 from nltk.stem import WordNetLemmatizer
 import nltk
 nltk.download('punkt')
 nltk.download('stopwords')
 nltk.download('wordnet')
+import sys
 
 expansion_terms = None
 developers, platforms, genres = set(), set(), set()
@@ -35,11 +37,28 @@ def execute(query, synonym_expansion=False):
         query = query.replace('-', ' ')
         query = re.sub(f'[{re.escape(string.punctuation)}]', ' ', query)
         query = re.sub(r'\s+', ' ', query).strip()
+        
         tokens = word_tokenize(query)
         stop_words = set(stopwords.words('english'))
         tokens = [word for word in tokens if word not in stop_words]
+
+        # exclude words that don't get lemmatised
+        exclude_words = ['ios']
+        exclude_set = set()
+        temp = []
+        for word in tokens:
+            if word in exclude_words:
+                exclude_set.add(word)
+            else:
+                temp.append(word)
+
         lemmatiser = WordNetLemmatizer()
-        lemmatised = [lemmatiser.lemmatize(word) for word in tokens]
+        lemmatised = [lemmatiser.lemmatize(word) for word in temp]
+
+        # add words from exclude_set
+        for word in exclude_set:
+            lemmatised.append(word)
+
         return ' '.join(lemmatised)
 
     def query_expansion(query, expansion_terms, synonym_expansion=True):
