@@ -88,7 +88,8 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
 
     sys.stderr.write('Ranking candidates... Got %d candidates. LTR: %s\n' % (len(candidates), useLTR))
     # Build feature set
-    df = compute_features(processed_query, candidates, useLTR)
+    # Since we used useLTR=False while training, we always set it to False here
+    df = compute_features(processed_query, candidates, False)
 
     # Extract required features for LTR model
     feature_cols = [
