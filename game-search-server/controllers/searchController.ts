@@ -7,6 +7,7 @@ import databaseService from '../service/databaseService';
 export const handleSearch = (req: Request, res: Response): void => {
   if (!validateParams(req, res, ['keywords'])) return;
   const keywords = req.query.keywords as string;
+  const useLTR = req.query.ltr === '1';
   if (!retrieveService.irProcess) {
     res.json({
       hasError: true,
@@ -17,7 +18,8 @@ export const handleSearch = (req: Request, res: Response): void => {
   const reqId = `${Math.random()}`;
   const message = JSON.stringify({
     id: reqId,
-    query: keywords
+    query: keywords,
+    useLTR
   });
   retrieveService.irProcess.stdin.write(message);
   retrieveService.irProcess.stdin.write('\n');

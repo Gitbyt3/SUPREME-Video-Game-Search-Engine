@@ -12,6 +12,8 @@ const handleSearch = (req, res) => {
     if (!(0, paramValidator_1.validateParams)(req, res, ['keywords']))
         return;
     const keywords = req.query.keywords;
+    console.log(req.query.ltr);
+    const useLTR = req.query.ltr === '1';
     if (!retrieve_1.default.irProcess) {
         res.json({
             hasError: true,
@@ -22,7 +24,8 @@ const handleSearch = (req, res) => {
     const reqId = `${Math.random()}`;
     const message = JSON.stringify({
         id: reqId,
-        query: keywords
+        query: keywords,
+        useLTR
     });
     retrieve_1.default.irProcess.stdin.write(message);
     retrieve_1.default.irProcess.stdin.write('\n');

@@ -1,10 +1,13 @@
-import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React, { useState, useCallback } from 'react';
+import { data, useNavigate } from 'react-router-dom';
 import '../styles.css';
 import { viewTransition } from '../utils';
+import Checkbox from './Checkbox';
+import { useAppStore } from './appStore';
 const HomePage: React.FC = () => {
   const [searchQuery, setSearchQuery] = useState('');
   const navigate = useNavigate();
+  const { state, dispatch } = useAppStore();
 
   const handleSearch = (e: React.FormEvent) => {
     e.preventDefault();
@@ -12,6 +15,14 @@ const HomePage: React.FC = () => {
       viewTransition(() => navigate(`/results?q=${encodeURIComponent(searchQuery)}`), true);
     }
   };
+
+  const handleLTRChange = useCallback((value: boolean, ev: React.MouseEvent<HTMLDivElement>) => {
+    ev.stopPropagation();
+    dispatch({
+      type: 'setLTR',
+      data: value
+    })
+  }, [dispatch]);
 
   const handleLogoClick = () => {
     window.open('https://www.google.com/search?q=Pantheon+(TV+series)&oq=pantheon&gs_lcrp=EgZjaHJvbWUqDggDEEUYJxg7GIAEGIoFMg8IABBFGDkYgwEYsQMYgAQyEwgBEC4YgwEYrwEYxwEYsQMYgAQyCggCEC4YsQMYgAQyDggDEEUYJxg7GIAEGIoFMgYIBBBFGDsyBggFEEUYPDIGCAYQRRg8MgYIBxBFGDzSAQg0NDE1ajBqN6gCALACAA&sourceid=chrome&ie=UTF-8', '_blank');
@@ -73,6 +84,11 @@ const HomePage: React.FC = () => {
               >
                 SEARCH
               </button>
+            </div>
+            <div className='ltr-switcher' onClick={() => { dispatch({type: 'toggleLTR'}) }}>
+              <Checkbox checked={state.useLTR} onChange={handleLTRChange}></Checkbox>
+              <div className='switch-text'>LTR: {state.useLTR ? 'ON': 'OFF'}</div>
+              <p>// Use LambdaMART instead of manually assigned weights for ranking</p>
             </div>
           </form>
         </div>

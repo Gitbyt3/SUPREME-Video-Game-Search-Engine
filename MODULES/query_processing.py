@@ -99,7 +99,7 @@ def execute(query, synonym_expansion=False):
         return {
             "rating_boost": any(kw in query_text for kw in ["best", "top-rated", "highest rated"]),
             "recency_boost": any(kw in query_text for kw in ["latest", "new", "2025", "2024"]),
-            "player_boost": any(kw in query_text for kw in ["most played", "popular"])
+            "player_boost": any(kw in query_text for kw in ["most played", "popular", "best", "trending"]),
         }
 
     output["Intent"] = detect_intent(query)

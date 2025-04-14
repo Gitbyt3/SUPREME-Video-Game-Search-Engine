@@ -6,6 +6,7 @@
   --secondary-color-darker: #f0a305;
   --text-color: #333;
   --text-secondary: #666;
+  --text-disabled: #999;
   --background-color: #f5f5f5;
   --card-background: #ffffff;
   --shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
@@ -186,6 +187,27 @@ button {
 }
 .home-page .form {
   width: 100%;
+}
+.home-page .ltr-switcher {
+  position: relative;
+  top: 30px;
+  display: flex;
+  align-items: center;
+  font-size: 14px;
+  gap: 8px;
+  color: var(--text-disabled);
+  cursor: pointer;
+  margin-left: 4px;
+}
+.home-page .ltr-switcher .checkbox {
+  position: relative;
+  top: -1px;
+}
+.home-page .ltr-switcher > div.switch-text {
+  color: var(--primary-color);
+  font-weight: bold;
+  min-width: 50px;
+  text-align: left;
 }
 
 .results-page {
@@ -747,6 +769,25 @@ button {
 .loading-container .loading-bar-inner {
   height: 100%;
   background: repeating-linear-gradient(90deg, var(--primary-color) 0px, var(--primary-color) 4px, transparent 4px, transparent 8px);
+}
+
+.checkbox {
+  width: var(--size, 14px);
+  height: var(--size, 14px);
+  border: 1px solid var(--color, var(--primary-color));
+}
+.checkbox.checked > div {
+  transform: scale(1);
+}
+.checkbox > div {
+  --inner-margin: 3px;
+  width: calc(100% - 2 * var(--inner-margin));
+  height: calc(100% - 2 * var(--inner-margin));
+  margin: var(--inner-margin);
+  background-color: var(--color, var(--primary-color));
+  transform-origin: 50% 50%;
+  transition: all 0.3s;
+  transform: scale(0);
 }
 
 /*# sourceMappingURL=styles.css.map */

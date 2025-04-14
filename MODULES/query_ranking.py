@@ -5,7 +5,7 @@ import pandas as pd
 import os
 import sys
 import lightgbm as lgb
-from utils import sigmoid_scaling, max_min_scaling
+from utils import sigmoid_scaling, max_min_scaling, standard_scaling
 
 model = None
 
@@ -57,7 +57,7 @@ def compute_features(query: dict, df: pd.DataFrame, useLTR = True) -> pd.DataFra
     # NEW: dummy rating signal if not already present
     df["rating_signal"] = (df["Rating"].fillna(0)) if useLTR else max_min_scaling(df["Rating"].fillna(0))
     if rating_boost:
-        df["rating_signal"] *= 1.5
+        df["rating_signal"] *= 1.2
 
     df["genre_match"] = df["Genres"].apply(
         lambda g: int(bool(set(g) & set(query.get("Genres", []))))
@@ -67,7 +67,7 @@ def compute_features(query: dict, df: pd.DataFrame, useLTR = True) -> pd.DataFra
     )
 
     if popularity_boost:
-        df["popularity_signal"] *= 1.5
+        df["popularity_signal"] *= 1.2
     if recency_boost:
         df["recency_signal"] *= 1.5
 
@@ -86,6 +86,7 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
     if model is None:
         raise RuntimeError("You must call query_ranking.init() with a trained model first.")
 
+    sys.stderr.write('Ranking candidates... Got %d candidates. LTR: %s\n' % (len(candidates), useLTR))
     # Build feature set
     df = compute_features(processed_query, candidates, useLTR)
 
@@ -100,7 +101,7 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
     if not useLTR:
         df["Final Score"] = (
             df["BM25 Score"] * 0.7 + df["SBERT Score"] * 0.3
-            + df["rating_signal"] * 0.2 + df["popularity_signal"] * 0.2
+            + df["rating_signal"] * 0.2 + df["popularity_signal"] * 0.3
             + df["recency_signal"] * 0.2
         )
     else:

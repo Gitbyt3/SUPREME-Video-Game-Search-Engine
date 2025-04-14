@@ -6,6 +6,7 @@ import LoadingAnimation from './LoadingAnimation';
 import Typewriter from './Typewriter';
 import { viewTransition } from '../utils';
 import { query as apiQuery, recordCtr } from '../utils/api';
+import { useAppStore } from './appStore';
 
 interface Game {
   id: number;
@@ -151,6 +152,7 @@ const ResultsPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [lastResponseTime, setLastResponseTime] = useState<string>('');
   let lastQuery = useRef<string>('');
+  const { state } = useAppStore();
 
   useEffect(() => {
     console.log(lastQuery.current, query);
@@ -159,7 +161,7 @@ const ResultsPage: React.FC = () => {
     }
     lastQuery.current = query;
     const fetchData = async() => {
-      const result = await apiQuery(query || '');
+      const result = await apiQuery(query || '', state.useLTR);
       console.log(result);
       setGames(result);
       setIsLoading(false);
@@ -174,7 +176,7 @@ const ResultsPage: React.FC = () => {
     return () => {
       // clean up
     };
-  }, [query]);
+  }, [query, state.useLTR]);
 
   const handleSearch = (e: React.FormEvent, query: string) => {
     e.preventDefault();
@@ -209,7 +211,7 @@ const ResultsPage: React.FC = () => {
       ) : (
         <>
           <h1 className="title">
-            <Typewriter text={`Search results for "${query}" in ${lastResponseTime}`} />
+            <Typewriter text={`Search results for "${query}" in ${lastResponseTime}s | LTR(${state.useLTR ? 'ON': 'OFF'})`} />
           </h1>
           <div className="results-grid">
             {games.map((game, index) => (

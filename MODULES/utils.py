@@ -29,3 +29,6 @@ def sigmoid_scaling(scores, shift=None, slope=None):
 
 def max_min_scaling(scores):
     return (scores - scores.min()) / (scores.max() - scores.min())
+
+def standard_scaling(scores):
+    return (scores - np.mean(scores)) / np.std(scores)

@@ -75,6 +75,9 @@ def retrieve_top_k_faiss(query, top_k=100):
 
     output = []
     for d, i in zip(distance, index):
+        # filter out documents with score 0
+        if d == 0:
+            continue
         output.append((query['Processed'], doc_titles[i], i, d))
 
     return output
@@ -85,11 +88,11 @@ bm25_models = None
 def init_bm25_models(documents):
     global bm25_models
     bm25_models = [
-        BM25Okapi(documents['Title'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.2, b=0.4),
-        BM25Okapi(documents['Developers'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.1, b=0.3),
-        BM25Okapi(documents['Summary'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.2, b=0.8),
-        BM25Okapi(documents['Platforms'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
-        BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.0, b=0.2),
+        BM25Okapi(documents['Title'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.6, b=0.4),
+        BM25Okapi(documents['Developers'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.2, b=0.3),
+        BM25Okapi(documents['Summary'].apply(lambda doc: tokenize(doc)).tolist(), k1=0.8, b=0.6),
+        BM25Okapi(documents['Platforms'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.4, b=0.2),
+        BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.4, b=0.2),
     ]
 
 
@@ -97,10 +100,15 @@ def init_bm25_models(documents):
 def retrieve_top_k_bm25_new(processed_query, top_k=100):
     global bm25_models, BM25_weights, doc_titles
     query = tokenize(processed_query['Processed'])
+    query_original = tokenize(processed_query['Original'])
     scores = np.zeros((len(bm25_models), len(doc_titles)))
     score_details = []
     for i, model in enumerate(bm25_models):
-        model_score = model.get_scores(query)
+        # for title we use the original query
+        if i == 0:
+            model_score = model.get_scores(query_original)
+        else:
+            model_score = model.get_scores(query)
         score_details.append(model_score.tolist())
         scores[i] = model_score * BM25_weights[i]
     scores = np.sum(scores, axis=0)
@@ -111,9 +119,12 @@ def retrieve_top_k_bm25_new(processed_query, top_k=100):
     details_output = []
     for k in ranked_topk:
         doc_id, doc_title, score, details = k[0][0], k[0][1], k[1], k[2]
+        # filter out documents with score 0
+        if score == 0:
+            continue
         details_output.append(details)
         output.append((processed_query['Processed'], doc_title, doc_id, score))
-    return output, details_output
+    return output, details_output, scores, score_details
 
 
 
@@ -129,13 +140,16 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
 
 
 def execute(query, top_k=100):
-    topk_bm25, topk_bm25_scores = retrieve_top_k_bm25_new(query, top_k=top_k)
+    topk_bm25, topk_bm25_scores, scores, score_details = retrieve_top_k_bm25_new(query, top_k=top_k)
     topk_faiss = retrieve_top_k_faiss(query, top_k=top_k * 3)
 
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
     topk_bm25_df['BM25_Scores'] = topk_bm25_scores
     
     topk_faiss_df = pd.DataFrame(topk_faiss, columns=['Query','Title','ID', 'SBERT Score']).drop(columns=['Title'])
+
     results = pd.merge(topk_bm25_df, topk_faiss_df, on=['Query', 'ID'], how='outer').fillna(0)
+    # populate BM25 Score for FAISS results
+    results['BM25 Score'] = results.apply(lambda row: row['BM25 Score'] if row['BM25 Score'] > 0 else scores[row['ID']], axis=1)
 
     return results

@@ -55,6 +55,7 @@ def main():
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
     BM25_weights = [2.0, 0.8, 1.0, 1.4, 1.4]
     cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights)
+    qr.init()
 
     sys.stdout.flush()
     sys.stdout.write('initialized')
@@ -78,6 +79,7 @@ def main():
 
         query = message['query']
         req_id = message['id']
+        useLTR = message.get('useLTR', False)
         processed_query = qp.execute(query)
         sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query['Processed'] + '\n')
         sys.stderr.flush()
@@ -98,8 +100,7 @@ def main():
             on='ID', 
             how='left').fillna(0)
 
-        qr.init() # bypass the model loading
-        results = qr.execute(0, processed_query, candidates, useLTR=True)
+        results = qr.execute(0, processed_query, candidates, useLTR=useLTR)
     
         sys.stdout.write(json.dumps({
             'id': req_id,

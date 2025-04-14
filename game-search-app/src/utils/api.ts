@@ -4,8 +4,8 @@ function handleError(data: any) {
     throw new Error(data.message);
   }
 }
-export const query = async (q: string) => 
-  (await fetch('http://localhost:3005/search?keywords=' + encodeURIComponent(q)))
+export const query = async (q: string, useLTR: boolean) => 
+  (await fetch('http://localhost:3005/search?keywords=' + encodeURIComponent(q) + '&ltr=' + (useLTR ? 1 : 0)))
     .json()
     .then((data) => {
       handleError(data);
@@ -28,7 +28,7 @@ export const query = async (q: string) =>
         }
 
         // add ctr to weight_score
-        item['weighted_score'] += (item['ctr'] || 0) / 100
+        item['finalScore'] += (item['ctr'] || 0) / 100
 
         return item;
       });
