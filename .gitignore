@@ -7,3 +7,6 @@ games.db
 node_modules
 .DS_Store
 embeddings/
+
+lambdamart_model.txt
+
