@@ -61,6 +61,16 @@ body {
   color: var(--text-color);
 }
 
+a {
+  background-color: var(--primary-color);
+  color: #fff;
+
+  &:active {
+    background-color: unset;
+    color: var(--primary-color);
+  }
+}
+
 input,
 button {
   font-family: 'blender', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;

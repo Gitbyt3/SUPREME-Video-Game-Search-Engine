@@ -283,7 +283,7 @@ const ResultsPage: React.FC = () => {
                 </div>
               </div>
               <div className="modal-body">
-                <p className="modal-description">{selectedGame.summary}</p>
+                <p className="modal-description">{selectedGame.summary} <a href={`https://www.google.com/search?q=${encodeURIComponent(selectedGame.title)}`} target='blank'>-&gt; Google</a></p>
                 <div className="modal-details">
                   <div className="modal-genre">
                     <i className="fa-solid fa-gamepad"></i>
