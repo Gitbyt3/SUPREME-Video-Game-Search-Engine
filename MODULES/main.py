@@ -84,11 +84,6 @@ def main():
         sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query['Processed'] + '\n')
         sys.stderr.flush()
         candidates = cr.execute(processed_query)
-        # scaler = StandardScaler()
-        # candidates[['BM25 Score', 'SBERT Score']] = scaler.fit_transform(candidates[['BM25 Score', 'SBERT Score']])
-        # try use Sigmoid scaling
-        # candidates['weighted_score'] = sigmoid_scaling(candidates['BM25 Score']) * .7 + sigmoid_scaling(candidates['SBERT Score']) * .3
-        # try use min-max scaling
         candidates['weighted_score'] = candidates['BM25 Score'] * 0.7 + candidates['SBERT Score'] * 0.3
 
         # merge other columns
