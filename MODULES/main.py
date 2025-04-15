@@ -54,8 +54,8 @@ def main():
 
     SBERT_weights = [0.5, 0.2, 0.3, 0.4]
     BM25_weights = [1.7, 0.8, 1.0, 1.4, 1.4]
-    cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights)
-    qr.init()
+    cr.init(games_BM25, games_SBERT, SBERT_weights, BM25_weights, platforms_set)
+    qr.init(games=games_SBERT)
 
     sys.stdout.flush()
     sys.stdout.write('initialized')
@@ -83,16 +83,13 @@ def main():
         processed_query = qp.execute(query)
         sys.stderr.write('Done query processing: ' + query + ' -> ' + processed_query['Processed'] + '\n')
         sys.stderr.flush()
-        candidates = cr.execute(processed_query, platforms=platforms_set)
+        candidates = cr.execute(processed_query)
         # scaler = StandardScaler()
         # candidates[['BM25 Score', 'SBERT Score']] = scaler.fit_transform(candidates[['BM25 Score', 'SBERT Score']])
         # try use Sigmoid scaling
         # candidates['weighted_score'] = sigmoid_scaling(candidates['BM25 Score']) * .7 + sigmoid_scaling(candidates['SBERT Score']) * .3
         # try use min-max scaling
-        candidates['BM25 Score'] = max_min_scaling(candidates['BM25 Score'])
-        candidates['SBERT Score'] = max_min_scaling(candidates['SBERT Score'])
         candidates['weighted_score'] = candidates['BM25 Score'] * 0.7 + candidates['SBERT Score'] * 0.3
-        # candidates = candidates.sort_values(by='weighted_score', ascending=False)
 
         # merge other columns
         candidates = pd.merge(candidates, 

@@ -244,7 +244,7 @@ const ResultsPage: React.FC = () => {
                 <div className="game-meta-numerical">
                   <div className="game-rating" title="Rating">
                     <img src="./assets/star.png" alt="Rating" width={16} />
-                    <b>{game.rating}</b>/10
+                    <b>{game.rating}</b>/5
                   </div>
                   <div className="game-players" title="Players">
                     <b>{game.plays}</b>

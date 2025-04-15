@@ -7,6 +7,7 @@ from sentence_transformers import SentenceTransformer
 import faiss
 import re
 from rank_bm25 import BM25Okapi
+from utils import max_min_scaling
 
 def tokenize(text):
     # Remove punctuation and convert to lowercase
@@ -95,8 +96,8 @@ def init_bm25_models(documents):
         BM25Okapi(documents['Genres'].apply(lambda doc: tokenize(doc)).tolist(), k1=1.4, b=0.2),
     ]
 
-
-def remove_platforms(query, platforms):
+platforms = None
+def remove_platforms(query):
     """
     Removes any occurrence of platform names from the query string.
     
@@ -117,7 +118,7 @@ def remove_platforms(query, platforms):
     query = re.sub(r'\s+', ' ', query).strip()
     return query
 
-def retrieve_top_k_bm25_new(processed_query, top_k=100, platforms=None):
+def retrieve_top_k_bm25_new(processed_query, top_k=100):
     global bm25_models, BM25_weights, doc_titles
     query = tokenize(processed_query['Processed'])
     scores = np.zeros((len(bm25_models), len(doc_titles)))
@@ -127,7 +128,7 @@ def retrieve_top_k_bm25_new(processed_query, top_k=100, platforms=None):
         if i == 0:
             # remove platforms from the query when performing title matching
             _query = processed_query['Original']
-            _query = tokenize(remove_platforms(_query, platforms) if platforms else _query)
+            _query = tokenize(remove_platforms(_query) if platforms else _query)
             model_score = model.get_scores(_query)
         else:
             model_score = model.get_scores(query)
@@ -151,8 +152,9 @@ def retrieve_top_k_bm25_new(processed_query, top_k=100, platforms=None):
 
 
 BM25_weights, doc_titles = None, None
-def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
-    global BM25_weights, doc_titles
+def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights, platforms_set=None):
+    global BM25_weights, doc_titles, platforms
+    platforms = platforms_set
     BM25_weights = bm25_weights
     doc_titles = games_bm25['Title']
 
@@ -161,8 +163,8 @@ def init(games_bm25, games_SBERT, SBERT_weights, bm25_weights):
 
 
 
-def execute(query, top_k=100, platforms=None):
-    topk_bm25, topk_bm25_scores, scores, score_details = retrieve_top_k_bm25_new(query, top_k=top_k, platforms=platforms)
+def execute(query, top_k=100):
+    topk_bm25, topk_bm25_scores, scores, score_details = retrieve_top_k_bm25_new(query, top_k=top_k)
     topk_faiss = retrieve_top_k_faiss(query, top_k=top_k * 3)
 
     topk_bm25_df = pd.DataFrame(topk_bm25, columns=['Query','Title','ID','BM25 Score'])
@@ -173,5 +175,8 @@ def execute(query, top_k=100, platforms=None):
     results = pd.merge(topk_bm25_df, topk_faiss_df, on=['Query', 'ID'], how='outer').fillna(0)
     # populate BM25 Score for FAISS results
     results['BM25 Score'] = results.apply(lambda row: row['BM25 Score'] if row['BM25 Score'] > 0 else scores[row['ID']], axis=1)
+
+    results['BM25 Score'] = max_min_scaling(results['BM25 Score'])
+    results['SBERT Score'] = max_min_scaling(results['SBERT Score'])
 
     return results

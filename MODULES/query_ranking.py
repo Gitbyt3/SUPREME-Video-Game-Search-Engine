@@ -9,7 +9,7 @@ from utils import sigmoid_scaling, max_min_scaling, standard_scaling
 
 model = None
 
-def init(model_object=None, train_if_missing=True):
+def init(model_object=None, train_if_missing=True, games=None):
     """
     Initialize the LambdaMART model.
     Args:
@@ -31,7 +31,7 @@ def init(model_object=None, train_if_missing=True):
     elif train_if_missing:
         sys.stderr.write("No model found. Training LambdaMART model from scores.csv...\n")
         sys.stderr.flush()
-        model = train_model()
+        model = train_model(games)
         model.save_model(model_path)
 
 
@@ -61,10 +61,10 @@ def compute_features(query: dict, df: pd.DataFrame, useLTR = True) -> pd.DataFra
 
     df["genre_match"] = df["Genres"].apply(
         lambda g: int(bool(set(g) & set(query.get("Genres", []))))
-    )
+    ).astype(int)
     df["platform_match"] = df["Platforms"].apply(
         lambda p: int(bool(set(p) & set(query.get("Platforms", []))))
-    )
+    ).astype(int)
 
     if popularity_boost:
         df["popularity_signal"] *= 1.2
@@ -112,13 +112,9 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
     # Sort and return
     return df.sort_values(by="Final Score", ascending=False).reset_index(drop=True)
 
-def log_to_stderr(message):
-    sys.stderr.write(message + '\n')
-    sys.stderr.flush()
-
-def train_model():
+def train_model(games):
     from sklearn.model_selection import train_test_split
-    from lightgbm import early_stopping, log_evaluation
+    from lightgbm import early_stopping, log_evaluation, register_logger
     from ast import literal_eval
     from candidate_retrieval import execute as retrieve_candidates
     from query_processing import execute as process_query
@@ -131,9 +127,18 @@ def train_model():
             return literal_eval(x)
         except Exception:
             return []
-
+    
     df['Genres'] = df['Genres'].apply(lambda x: try_literal_eval(x) if pd.notnull(x) else [])
     df['Platforms'] = df['Platforms'].apply(lambda x: try_literal_eval(x) if pd.notnull(x) else [])
+
+    candidates_dict = {}
+    queries_dict = {}
+    queries = df["Query"].unique()
+    for raw_query in queries:
+        processed = process_query(raw_query)
+        candidates = retrieve_candidates(processed)
+        candidates_dict[raw_query] = candidates
+        queries_dict[raw_query] = processed
 
     feature_rows = []
     skipped = 0
@@ -142,8 +147,7 @@ def train_model():
         raw_query = row["Query"]
         game_id = row["ID"]
 
-        processed = process_query(raw_query)
-        candidates = retrieve_candidates(processed)
+        candidates = candidates_dict.get(raw_query)
 
         # Find matching game in candidates
         match = candidates[candidates["ID"] == game_id]
@@ -160,10 +164,10 @@ def train_model():
             "Platforms": row["Platforms"],
             "BM25 Score": match_row["BM25 Score"],
             "SBERT Score": match_row["SBERT Score"],
-            "Plays": match_row.get("Plays", 0),
-            "Playing": match_row.get("Playing", 0),
-            "Rating": match_row.get("Rating", 0),
-            "Release_Date": match_row.get("Release_Date", "TBD")
+            "Plays": row.get("Plays", 0),
+            "Playing": row.get("Playing", 0),
+            "Rating": row.get("Rating", 0),
+            "Release_Date": row.get("Release_Date", "TBD")
         }
         feature_rows.append(feature_row)
 
@@ -176,12 +180,10 @@ def train_model():
     features_df['Genres'] = features_df['Genres'].apply(lambda x: x if isinstance(x, list) else [])
     features_df['Platforms'] = features_df['Platforms'].apply(lambda x: x if isinstance(x, list) else [])
 
-    # Simulate query object per row
     feature_rows_full = []
-    for _, row in features_df.iterrows():
-        query = {"Genres": row["Genres"], "Platforms": row["Platforms"], "Intent": {}}
-        row_df = pd.DataFrame([row])
-        row_features = compute_features(query, row_df, useLTR=False)
+    for query in queries:
+        row_df = features_df[features_df['Query'] == query]
+        row_features = compute_features(queries_dict[raw_query], row_df, useLTR=False)
         feature_rows_full.append(row_features)
 
     features_df = pd.concat(feature_rows_full, ignore_index=True)
@@ -197,9 +199,9 @@ def train_model():
 
     # Cap to 200 per query
     features_df = features_df.groupby("Query", group_keys=False).apply(lambda g: g.head(200)).reset_index(drop=True)
-
     # Grouping by query
     features_df["group_id"] = features_df["Query"].astype("category").cat.codes
+
     train_ids, test_ids = train_test_split(features_df["group_id"].unique(), test_size=0.2, random_state=42)
     train_mask = features_df["group_id"].isin(train_ids)
     test_mask = features_df["group_id"].isin(test_ids)
@@ -233,7 +235,7 @@ def train_model():
         num_boost_round=100,
         callbacks=[
             early_stopping(stopping_rounds=10),
-            log_evaluation(period=10, logger=log_to_stderr)  # ← logs now go to stderr!
+            log_evaluation(period=10)  # ← logs now go to stderr!
         ]
     )
 
