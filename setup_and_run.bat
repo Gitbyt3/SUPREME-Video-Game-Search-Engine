@@ -3,17 +3,24 @@ echo ========================
 echo Starting Search Engine...
 echo ========================
 
-echo Starting frontend (game-search-app)...
+:: Activate Anaconda environment (py312)
+CALL C:\\Path\\To\\Anaconda3\\Scripts\\activate.bat your_env_name
+
+:: Start frontend (React app)
+echo Launching Frontend (game-search-app)...
 cd game-search-app
 call npm install
-start cmd /k "npm start"
+start "" cmd /k "CALL C:\\Path\\To\\Anaconda3\\Scripts\\activate.bat your_env_name"
 cd ..
 
-echo Starting backend (game-search-server)...
+:: Start backend (Node.js server)
+echo Launching Backend (game-search-server)...
 cd game-search-server
 call npm install
-start cmd /k "npm start"
+start "" cmd /k "CALL C:\\Path\\To\\Anaconda3\\Scripts\\activate.bat your_env_name"
 cd ..
 
-echo All services started in new terminals. Close this window to stop them.
+echo ========================
+echo All services launched!
+echo ========================
 pause
