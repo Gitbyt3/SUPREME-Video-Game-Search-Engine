@@ -69,7 +69,7 @@ def compute_features(query: dict, df: pd.DataFrame, useLTR = True) -> pd.DataFra
     if popularity_boost:
         df["popularity_signal"] *= 1.2
     if recency_boost:
-        df["recency_signal"] *= 1.5
+        df["recency_signal"] *= 1.7
 
     return df
 
@@ -103,7 +103,7 @@ def execute(query_id: str, processed_query: dict, candidates: pd.DataFrame, useL
         df["Final Score"] = (
             df["BM25 Score"] * 0.7 + df["SBERT Score"] * 0.3
             + df["rating_signal"] * 0.1 + df["popularity_signal"] * 0.3
-            + df["recency_signal"] * 0.2 + df["genre_match"] * 0.1 + df["platform_match"] * 0.1
+            + df["recency_signal"] * 0.25 + df["genre_match"] * 0.2 + df["platform_match"] * 0.2
         )
     else:
         # Score using LambdaMART

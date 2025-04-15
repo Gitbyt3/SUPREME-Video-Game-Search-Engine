@@ -33,7 +33,7 @@ export const query = async (q: string, useLTR: boolean) =>
         return item;
       });
 
-      return data.sort((a: any, b: any) => b['finalScore'] - a['finalScore']);
+      return data.sort((a: any, b: any) => b['finalScore'] - a['finalScore']).filter((item: any) => item['Final Score'] > 0);
     })
 
 export const recordCtr = async(id: string | number) =>
