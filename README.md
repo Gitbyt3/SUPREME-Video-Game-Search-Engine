@@ -44,17 +44,25 @@ Or manually install:
 #### On Windows:
 
 Edit the .bat file (setup_and_run.bat):
+
 :: Replace directories with the directory of your own Anaconda environment name (make sure it is the same environment the dependencies are installed on)
 
 Example directory:
+
+```shell
 CALL C:\\Path\\To\\Anaconda3\\Scripts\\activate.bat your_env_name
+```
 
 Example of .bat file lines to change:
+
+```shell
 call npm install
 start "" cmd /k "CALL C:\\Path\\To\\Anaconda3\\Scripts\\activate.bat your_env_name && npm start"
 cd ..
+```
 
 After replacing, save & run:
+
 ```shell
 setup_and_run.bat
 ```
