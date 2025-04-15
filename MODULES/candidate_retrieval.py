@@ -11,7 +11,8 @@ from utils import max_min_scaling
 
 def tokenize(text):
     # Remove punctuation and convert to lowercase
-    text = re.sub(r'[^\w\s]', '', text)
+    text = re.sub(r'[^\w\s]', ' ', text)
+    text = re.sub(r'\s+', ' ', text).strip()
     return text.lower().split()
 
 def save_embeddings(embeddings, onehot_encoders, faiss_index, file_path):
